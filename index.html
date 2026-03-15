@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barber Studio 25 - Sistema Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Inter,Arial;background:#05070d;color:white}
+header{background:linear-gradient(180deg,#0b0f1a,#05070d);padding:50px 20px;text-align:center;border-bottom:1px solid #1f2937}
+.logo{font-family:Oswald;font-size:44px;letter-spacing:4px}
+.subtitle{opacity:.7}
+.container{max-width:1100px;margin:auto;padding:25px}
+.grid{display:grid;gap:20px}
+.card{background:#0f172a;border-radius:14px;padding:25px;border:1px solid #1e293b}
+h2{font-family:Oswald;margin-top:0}
+.services{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px}
+.service{background:#020617;padding:18px;border-radius:10px;border:1px solid #1e293b;text-align:center}
+.price{font-size:22px;font-weight:600;margin:10px 0}
+.calendar{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:15px}
+.slot{background:#020617;padding:10px;border-radius:8px;border:1px solid #1e293b;text-align:center;cursor:pointer}
+.slot.booked{background:#7f1d1d;border-color:#991b1b;cursor:not-allowed}
+.slot.selected{background:#1d4ed8}
+input,select{padding:12px;border-radius:8px;border:none;background:#020617;color:white;width:100%}
+button{background:#1d4ed8;border:none;padding:14px;border-radius:8px;color:white;font-weight:600;cursor:pointer;margin-top:10px}
+button:hover{background:#2563eb}
+.small{font-size:12px;opacity:.6}
+.admin{margin-top:30px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{padding:10px;border-bottom:1px solid #1e293b;text-align:left}
+footer{text-align:center;padding:30px;margin-top:40px;border-top:1px solid #1e293b}
+</style>
+</head>
+<body>
+
+<header>
+<div class="logo">BARBER STUDIO 25</div>
+<div class="subtitle">Sistema profesional de reservas</div>
+</header>
+
+<div class="container grid">
+
+<div class="card">
+<h2>Servicios</h2>
+<div class="services">
+<div class="service">
+<h3>Corte de Cabello</h3>
+<div class="price">$14.000</div>
+<div class="small">30 minutos</div>
+</div>
+<div class="service">
+<h3>Corte + Barba</h3>
+<div class="price">$16.000</div>
+<div class="small">45 minutos</div>
+</div>
+<div class="service">
+<h3>Barba</h3>
+<div class="price">$10.000</div>
+<div class="small">15 minutos</div>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h2>1. Elegí fecha</h2>
+<input type="date" id="fecha">
+
+<h2 style="margin-top:20px">2. Elegí horario</h2>
+<div class="calendar" id="horarios"></div>
+<div class="small">Rojo = ocupado</div>
+</div>
+
+<div class="card">
+<h2>3. Confirmar reserva</h2>
+
+<label>Nombre</label>
+<input type="text" id="nombre">
+
+<label>Teléfono</label>
+<input type="tel" id="telefono">
+
+<label>Servicio</label>
+<select id="servicio">
+<option value="Corte de cabello">Corte de cabello</option>
+<option value="Corte y barba">Corte y barba</option>
+<option value="Barba">Barba</option>
+</select>
+
+<button onclick="reservar()">Confirmar turno</button>
+
+</div>
+
+<div class="card admin">
+<h2>Agenda del día (solo barbero)</h2>
+<button onclick="verAgenda()">Ver turnos del día</button>
+<table id="tablaTurnos">
+<thead>
+<tr>
+<th>Hora</th>
+<th>Cliente</th>
+<th>Servicio</th>
+<th>Teléfono</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+</div>
+
+<footer>
+<p>Barber Studio 25 · Monte Castro</p>
+</footer>
+
+<script>
+const horarios=[
+"09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30",
+"15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30"
+]
+
+const horariosContainer=document.getElementById('horarios')
+let horaSeleccionada=null
+
+function cargarHorarios(){
+ horariosContainer.innerHTML=""
+ const fecha=document.getElementById('fecha').value
+ if(!fecha) return
+
+ let reservas=JSON.parse(localStorage.getItem('reservas')||"{}")
+ let ocupados=reservas[fecha]||[]
+
+ horarios.forEach(h=>{
+  const div=document.createElement('div')
+  div.className='slot'
+  div.innerText=h
+
+  if(ocupados.find(r=>r.hora===h)){
+   div.classList.add('booked')
+  }
+
+  div.onclick=()=>{
+   if(div.classList.contains('booked'))return
+   document.querySelectorAll('.slot').forEach(s=>s.classList.remove('selected'))
+   div.classList.add('selected')
+   horaSeleccionada=h
+  }
+
+  horariosContainer.appendChild(div)
+ })
+}
+
+document.getElementById('fecha').addEventListener('change',cargarHorarios)
+
+function reservar(){
+ const nombre=document.getElementById('nombre').value
+ const telefono=document.getElementById('telefono').value
+ const servicio=document.getElementById('servicio').value
+ const fecha=document.getElementById('fecha').value
+
+ if(!horaSeleccionada){
+  alert('Seleccioná horario')
+  return
+ }
+
+ let reservas=JSON.parse(localStorage.getItem('reservas')||"{}")
+
+ if(!reservas[fecha]) reservas[fecha]=[]
+
+ reservas[fecha].push({
+  hora:horaSeleccionada,
+  nombre,
+  telefono,
+  servicio
+ })
+
+ localStorage.setItem('reservas',JSON.stringify(reservas))
+
+ let mensaje=`Hola! Quiero confirmar turno:%0A
+Nombre: ${nombre}%0A
+Servicio: ${servicio}%0A
+Fecha: ${fecha}%0A
+Hora: ${horaSeleccionada}`
+
+ window.open(`https://wa.me/5491164091400?text=${mensaje}`,'_blank')
+
+ cargarHorarios()
+}
+
+function verAgenda(){
+ const fecha=document.getElementById('fecha').value
+ if(!fecha) return
+
+ const tabla=document.querySelector('#tablaTurnos tbody')
+ tabla.innerHTML=""
+
+ let reservas=JSON.parse(localStorage.getItem('reservas')||"{}")
+ let turnos=reservas[fecha]||[]
+
+ turnos.sort((a,b)=>a.hora.localeCompare(b.hora))
+
+ turnos.forEach(t=>{
+  let fila=`<tr>
+  <td>${t.hora}</td>
+  <td>${t.nombre}</td>
+  <td>${t.servicio}</td>
+  <td>${t.telefono}</td>
+  </tr>`
+
+  tabla.innerHTML+=fila
+ })
+}
+</script>
+
+</body>
+</html>
